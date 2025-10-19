@@ -1,0 +1,37 @@
+name: 阿里云Docker构建与部署
+
+# 触发条件：推送到main分支时运行
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push-to-acr:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 步骤1：拉取GitHub仓库代码
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      # 步骤2：设置Docker Buildx
+      - name: 配置Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 步骤3：登录阿里云容器镜像服务（ACR）
+      - name: 登录阿里云ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ALI_ACR_REGISTRY }}  # 阿里云ACR仓库公网地址（如registry.cn-hangzhou.aliyuncs.com）
+          username: ${{ secrets.ALI_ACCESS_KEY_ID }}  # 阿里云AccessKey ID
+          password: ${{ secrets.ALI_ACCESS_KEY_SECRET }}  # 阿里云AccessKey Secret
+
+      # 步骤4：构建镜像并推送到阿里云ACR
+      - name: 构建并推送镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .  # 构建上下文（当前目录）
+          push: true  # 推送到ACR
+          # 镜像标签：阿里云ACR地址/命名空间/仓库名:latest
+          tags: ${{ secrets.ALI_ACR_REGISTRY }}/${{ secrets.ALI_ACR_NAMESPACE }}/${{ secrets.ALI_ACR_REPO_NAME }}:latest
+
